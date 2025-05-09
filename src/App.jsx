@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react'
 import './App.css'
 import Form from './component/Form';
 import TodoList from './component/Todolist';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import YesterdayTasks from './component/YesterdayTasks'; // Dün Yapılanlar sayfasını import ettik
+
 function App() {
 
   const [inputText, setInputText] = useState("");
@@ -9,14 +12,25 @@ function App() {
   const [status, setStatus] = useState("all");
   const [filteredTodos, setFilteredTodos] = useState([]);
 
+  // API'den veri çekme
   useEffect(() => {
-    getLocalTodos();
-  }, [])
+    fetchTodos();
+  }, []);
 
   useEffect(() => {
     filterHandler(todos);
-    saveLocalTodos();
-  }, [todos, status])
+  }, [todos, status]);
+
+  // Todo verilerini API'den çekme
+  const fetchTodos = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/todolist'); // API URL'sini doğru olarak girdiğinizden emin olun
+      const data = await response.json();
+      setTodos(data);
+    } catch (error) {
+      console.error('API Error:', error);
+    }
+  }
 
   const filterHandler = (todos) => {
     switch (status) {
@@ -32,38 +46,45 @@ function App() {
     }
   }
 
-  const saveLocalTodos = () => {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }
-
-  const getLocalTodos = () => {
-    if (localStorage.getItem("todos") === null) {
-      localStorage.setItem("todos", JSON.stringify([]))
-    } else {
-      setTodos(JSON.parse(localStorage.getItem("todos")))
-    }
-  }
-
   return (
+    <Router>
+      <div className="App">
+        <header>
+          <h1>MY TODO LIST</h1>
+        </header>
 
-    <div className="App">
-      <header>
-        <h1>MY TODO LIST</h1>
-      </header>
-      <Form
-        inputText={inputText}
-        setInputText={setInputText}
-        todos={todos}
-        setTodos={setTodos}
-        setStatus={setStatus}
-      />
-      <TodoList
-        todos={todos}
-        setTodos={setTodos}
-        filteredTodos={filteredTodos}
-      />
-    </div>
+        <nav>
+          <ul>
+            <li><Link to="/">Ana Sayfa</Link></li>
+            <li><Link to="/yesterday">Dün Yapılanlar</Link></li>
+          </ul>
+        </nav>
+
+        {/* Routes kısmı ile farklı sayfalara yönlendirme */}
+        <Routes>
+          <Route path="/" element={
+            <div>
+              <Form
+                inputText={inputText}
+                setInputText={setInputText}
+                todos={todos}
+                setTodos={setTodos}
+                setStatus={setStatus}
+              />
+              <TodoList
+                todos={todos}
+                setTodos={setTodos}
+                filteredTodos={filteredTodos}
+              />
+            </div>
+          } />
+
+          <Route path="/yesterday" element={<YesterdayTasks todos={todos} />} />
+        </Routes>
+
+      </div>
+    </Router>
   );
 }
 
-export default App
+export default App;
